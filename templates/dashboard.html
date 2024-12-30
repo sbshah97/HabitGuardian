@@ -24,23 +24,45 @@
                         <p class="card-text">
                             <small class="text-muted">Started: {{ habit.start_date.strftime('%Y-%m-%d') }}</small>
                         </p>
+
+                        <!-- Streak Counter -->
+                        <div class="text-center mb-3">
+                            <div class="streak-counter display-4" data-streak="{{ habit.completion_streak }}">
+                                0
+                            </div>
+                            <small class="text-muted">Day Streak</small>
+                        </div>
+
+                        <!-- Progress Chart -->
+                        <div class="chart-container mb-3" style="position: relative; height: 100px;">
+                            <canvas id="habit-chart-{{ habit.id }}" 
+                                    class="habit-chart"
+                                    data-streak="{{ habit.completion_streak }}"
+                                    data-goal="7">
+                            </canvas>
+                        </div>
+
+                        <!-- Progress Bar -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span>Streak</span>
-                                <span class="badge bg-success">{{ habit.completion_streak }} days</span>
+                                <span>Weekly Progress</span>
+                                <span class="badge bg-success">{{ habit.completion_streak }}/7 days</span>
                             </div>
-                            <div class="progress">
-                                <div class="progress-bar" role="progressbar" 
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
                                      style="width: {{ (habit.completion_streak / 7) * 100 }}%"
-                                     aria-valuenow="{{ habit.completion_streak }}" aria-valuemin="0" aria-valuemax="7">
+                                     aria-valuenow="{{ habit.completion_streak }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="7">
                                 </div>
                             </div>
                         </div>
+
                         <p class="mb-2">
                             <i class="bi bi-piggy-bank"></i> Stake: ${{ "%.2f"|format(habit.stake_amount) }}
                         </p>
                         {% if habit.is_active %}
-                            <form method="POST" action="{{ url_for('check_in', habit_id=habit.id) }}">
+                            <form method="POST" action="{{ url_for('check_in', habit_id=habit.id) }}" class="mt-3">
                                 <button type="submit" class="btn btn-success w-100" 
                                         {% if habit.last_check_in and habit.last_check_in.date() == today %}disabled{% endif %}>
                                     <i class="bi bi-check-circle"></i> 
@@ -66,5 +88,8 @@
         <a href="{{ url_for('create_habit') }}" class="btn btn-primary">Create Habit</a>
     </div>
 {% endif %}
+{% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 {% endblock %}
