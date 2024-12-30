@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Plaid API Integration Documentation</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title">Overview</h2>
+            <p>Our application uses Plaid's Open Banking API to handle secure financial transactions in the UK. All endpoints are currently configured to work with Plaid's Sandbox environment for testing purposes.</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="mb-0">Available Endpoints</h3>
+        </div>
+        <div class="card-body">
+            <div class="endpoint mb-4">
+                <h4>1. Link Token Creation</h4>
+                <code class="d-block bg-dark text-light p-2 mb-2">GET /link-account</code>
+                <p>Creates a Link token for initializing Plaid Link. This is the first step in connecting a user's bank account.</p>
+                <ul>
+                    <li>Supports UK banks through Open Banking</li>
+                    <li>Returns a temporary link_token for frontend initialization</li>
+                </ul>
+            </div>
+
+            <div class="endpoint mb-4">
+                <h4>2. Exchange Public Token</h4>
+                <code class="d-block bg-dark text-light p-2 mb-2">POST /set-access-token</code>
+                <p>Exchanges the public token from Plaid Link for a permanent access token.</p>
+                <ul>
+                    <li>Stores access_token securely for future transactions</li>
+                    <li>Associates the bank account with user profile</li>
+                </ul>
+            </div>
+
+            <div class="endpoint mb-4">
+                <h4>3. Payment Initiation</h4>
+                <code class="d-block bg-dark text-light p-2 mb-2">POST /process-donation</code>
+                <p>Initiates payment transfer when a habit commitment is broken.</p>
+                <ul>
+                    <li>Supports UK's Open Banking payment initiation</li>
+                    <li>Handles transfer of stake amount to charity account</li>
+                    <li>Currently uses Sandbox test accounts for demonstration</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">Testing in Sandbox</h3>
+        </div>
+        <div class="card-body">
+            <p>For testing purposes, use these Plaid Sandbox credentials:</p>
+            <ul>
+                <li>Username: <code>user_good</code></li>
+                <li>Password: <code>pass_good</code></li>
+                <li>Select any UK bank from the list</li>
+            </ul>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                All transactions in Sandbox mode are simulated and no real money is moved.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

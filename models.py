@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_login import UserMixin
 from extensions import db
 
@@ -17,9 +17,16 @@ class Habit(db.Model):
     name = db.Column(db.String(100), nullable=False)
     stake_amount = db.Column(db.Float, nullable=False)
     start_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=False)
     completion_streak = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     last_check_in = db.Column(db.DateTime)
+    donation_status = db.Column(db.String(20), default='pending')  # pending, donated, refunded
+
+    def __init__(self, **kwargs):
+        super(Habit, self).__init__(**kwargs)
+        if not self.end_date:
+            self.end_date = self.start_date + timedelta(days=21)
 
 class DailyLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

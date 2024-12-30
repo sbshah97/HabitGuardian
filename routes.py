@@ -90,6 +90,13 @@ def check_in(habit_id):
         return redirect(url_for('dashboard'))
 
     today = datetime.utcnow().date()
+
+    # Check if habit period has ended
+    if datetime.utcnow() > habit.end_date:
+        if habit.completion_streak < 21 and habit.donation_status == 'pending':
+            return redirect(url_for('process_donation', habit_id=habit_id))
+        return redirect(url_for('dashboard'))
+
     log = DailyLog.query.filter_by(
         habit_id=habit_id,
         date=today
@@ -108,9 +115,8 @@ def check_in(habit_id):
         # Check for achievements
         streak_achievements = {
             7: ("Week Warrior", "7-day streak"),
-            30: ("Monthly Master", "30-day streak"),
-            100: ("Century Champion", "100-day streak"),
-            365: ("Year Legend", "365-day streak")
+            14: ("Two Weeks Wonder", "14-day streak"),
+            21: ("21 Day Champion", "Completed the full 21-day challenge")
         }
 
         for streak, (name, desc) in streak_achievements.items():
@@ -124,6 +130,11 @@ def check_in(habit_id):
                 )
                 db.session.add(achievement)
                 flash(f'🎉 Achievement Unlocked: {name}!')
+
+        if habit.completion_streak == 21:
+            habit.is_active = False
+            habit.donation_status = 'refunded'
+            flash('🎉 Congratulations! You\'ve successfully completed your 21-day habit challenge!')
 
         db.session.commit()
         flash('Check-in recorded successfully!')
@@ -219,3 +230,41 @@ def leaderboard():
         })
 
     return render_template('leaderboard.html', rankings=rankings)
+
+@app.route('/api-docs')
+def api_docs():
+    return render_template('api_docs.html')
+
+@app.route('/process-donation/<int:habit_id>', methods=['POST'])
+@login_required
+def process_donation(habit_id):
+    habit = Habit.query.get_or_404(habit_id)
+
+    if habit.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+
+    if habit.donation_status != 'pending':
+        flash('Donation has already been processed')
+        return redirect(url_for('dashboard'))
+
+    try:
+        # Process donation using Plaid
+        payment_id = plaid_service.create_payment(
+            current_user.plaid_access_token,
+            current_user.account_id,
+            habit.stake_amount
+        )
+
+        if payment_id:
+            habit.donation_status = 'donated'
+            db.session.commit()
+            flash('Donation processed successfully')
+        else:
+            flash('Failed to process donation')
+
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        app.logger.error(f"Donation processing error: {str(e)}")
+        flash('An error occurred while processing the donation')
+        return redirect(url_for('dashboard'))
