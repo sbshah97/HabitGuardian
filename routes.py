@@ -194,3 +194,28 @@ def share_to_linkedin(achievement_id):
     db.session.commit()
 
     return redirect(linkedin_url)
+
+@app.route('/leaderboard')
+def leaderboard():
+    # Get users with their total streak days and achievement counts
+    leaderboard_data = db.session.query(
+        User,
+        db.func.sum(Habit.completion_streak).label('total_streaks'),
+        db.func.count(Achievement.id).label('achievement_count')
+    ).join(Habit, User.id == Habit.user_id)\
+     .outerjoin(Achievement, User.id == Achievement.user_id)\
+     .group_by(User.id)\
+     .order_by(db.desc('total_streaks'), db.desc('achievement_count'))\
+     .all()
+
+    # Format data for template
+    rankings = []
+    for idx, (user, total_streaks, achievement_count) in enumerate(leaderboard_data, 1):
+        rankings.append({
+            'rank': idx,
+            'email': user.email,
+            'total_streaks': total_streaks or 0,
+            'achievement_count': achievement_count or 0
+        })
+
+    return render_template('leaderboard.html', rankings=rankings)

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="text-center mb-4">🏆 Habit Champions</h1>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Rank</th>
+                                    <th scope="col">User</th>
+                                    <th scope="col">Total Streak Days</th>
+                                    <th scope="col">Achievements</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rank in rankings %}
+                                    <tr class="leaderboard-row" data-rank="{{ rank.rank }}">
+                                        <td>
+                                            {% if rank.rank <= 3 %}
+                                                <span class="badge rounded-pill bg-{{ ['warning', 'secondary', 'bronze'][rank.rank-1] }} position-relative">
+                                                    {{ rank.rank }}
+                                                    <i class="bi bi-trophy-fill ms-1"></i>
+                                                </span>
+                                            {% else %}
+                                                {{ rank.rank }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ rank.email }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-success streak-bar" 
+                                                     role="progressbar" 
+                                                     style="width: 0%;"
+                                                     data-streaks="{{ rank.total_streaks }}">
+                                                    {{ rank.total_streaks }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-award"></i> {{ rank.achievement_count }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate progress bars
+    const progressBars = document.querySelectorAll('.streak-bar');
+    progressBars.forEach(bar => {
+        const streaks = parseInt(bar.dataset.streaks);
+        const maxStreaks = Math.max(...Array.from(progressBars).map(b => parseInt(b.dataset.streaks)));
+        const percentage = (streaks / maxStreaks) * 100;
+        
+        setTimeout(() => {
+            bar.style.transition = 'width 1s ease-out';
+            bar.style.width = percentage + '%';
+        }, 100);
+    });
+
+    // Animate row entrance
+    const rows = document.querySelectorAll('.leaderboard-row');
+    rows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            row.style.transition = 'all 0.5s ease-out';
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}
