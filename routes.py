@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import app
 from extensions import db, login_manager
 from models import User, Habit, DailyLog
+from services.plaid_service import PlaidService
+
+plaid_service = PlaidService()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -107,3 +110,34 @@ def check_in(habit_id):
         flash('Already checked in today!')
 
     return redirect(url_for('dashboard'))
+
+
+@app.route('/link-account')
+@login_required
+def link_account():
+    """Initialize Plaid Link for bank account connection"""
+    link_token = plaid_service.create_link_token(current_user.id)
+    if not link_token:
+        flash('Error creating link token')
+        return redirect(url_for('dashboard'))
+    return render_template('link_account.html', link_token=link_token)
+
+@app.route('/set-access-token', methods=['POST'])
+@login_required
+def set_access_token():
+    """Handle Plaid OAuth callback and set access token"""
+    public_token = request.json.get('public_token')
+    account_id = request.json.get('account_id')
+
+    if not public_token or not account_id:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    access_token = plaid_service.exchange_public_token(public_token)
+    if not access_token:
+        return jsonify({'error': 'Failed to exchange token'}), 400
+
+    current_user.plaid_access_token = access_token
+    current_user.account_id = account_id
+    db.session.commit()
+
+    return jsonify({'status': 'success'})

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Link Bank Account{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="card-title mb-4">Link Your Bank Account</h2>
+                <p class="mb-4">Connect your bank account to start tracking habits with financial stakes.</p>
+                <button id="link-button" class="btn btn-primary">
+                    <i class="bi bi-bank"></i> Connect Bank Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const handler = Plaid.create({
+        token: '{{ link_token }}',
+        onSuccess: async (public_token, metadata) => {
+            // Send public_token to server
+            try {
+                const response = await fetch('{{ url_for("set_access_token") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        public_token: public_token,
+                        account_id: metadata.account_id
+                    })
+                });
+                
+                if (response.ok) {
+                    window.location.href = '{{ url_for("dashboard") }}';
+                } else {
+                    alert('Error linking account');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error linking account');
+            }
+        },
+        onExit: (err, metadata) => {
+            if (err != null) {
+                console.error('Error:', err);
+            }
+        },
+    });
+
+    document.getElementById('link-button').onclick = () => {
+        handler.open();
+    };
+});
+</script>
+{% endblock %}
