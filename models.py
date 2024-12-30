@@ -24,9 +24,12 @@ class Habit(db.Model):
     donation_status = db.Column(db.String(20), default='pending')  # pending, donated, refunded
 
     def __init__(self, **kwargs):
+        if 'start_date' not in kwargs:
+            kwargs['start_date'] = datetime.utcnow()
         super(Habit, self).__init__(**kwargs)
+        # Calculate end_date after start_date is set
         if not self.end_date:
-            self.end_date = self.start_date + timedelta(days=21)
+            self.end_date = kwargs['start_date'] + timedelta(days=21)
 
 class DailyLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
