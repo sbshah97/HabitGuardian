@@ -3,34 +3,120 @@
 {% block title %}Create Habit{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title mb-4">Create New Habit</h2>
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Habit Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    <div class="mb-4">
-                        <label for="stake_amount" class="form-label">Stake Amount ($)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="stake_amount" name="stake_amount" 
-                                   min="1" step="0.01" required>
+<div class="container py-4">
+    <h1 class="text-center mb-4">Create New Habit</h1>
+
+    <!-- Preset Habits Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="mb-4">Choose a Preset Habit</h3>
+            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
+                {% for preset in presets %}
+                <div class="col">
+                    <div class="card h-100 preset-habit" 
+                         data-name="{{ preset.name }}"
+                         data-reminder="{{ preset.default_reminder }}"
+                         data-icon="{{ preset.icon }}">
+                        <div class="card-body text-center">
+                            <i class="{{ preset.icon }} display-4 mb-3"></i>
+                            <h5 class="card-title">{{ preset.name }}</h5>
+                            <p class="card-text small text-muted">{{ preset.description }}</p>
+                            <button type="button" class="btn btn-outline-primary select-preset">
+                                Select
+                            </button>
                         </div>
-                        <div class="form-text">
-                            This amount will be at stake for the next 7 days
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Habit Form -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Habit Details</h3>
+                    <form method="POST" id="habitForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Habit Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
                         </div>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Create Habit</button>
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
-                    </div>
-                </form>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="duration_days" class="form-label">Duration (days)</label>
+                                <input type="number" class="form-control" id="duration_days" 
+                                       name="duration_days" min="1" max="21" value="21" required>
+                                <div class="form-text">Maximum duration is 21 days</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="reminder_time" class="form-label">Daily Reminder</label>
+                                <input type="time" class="form-control" id="reminder_time" 
+                                       name="reminder_time" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="stake_amount" class="form-label">Stake Amount ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="stake_amount" 
+                                       name="stake_amount" min="1" step="0.01" required>
+                            </div>
+                            <div class="form-text">
+                                This amount will be at stake for your habit duration
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="habit_icon" id="habit_icon" value="bi-check-circle">
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Habit</button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle preset habit selection
+    const presetCards = document.querySelectorAll('.preset-habit');
+    presetCards.forEach(card => {
+        const selectBtn = card.querySelector('.select-preset');
+        selectBtn.addEventListener('click', () => {
+            // Fill form with preset values
+            document.getElementById('name').value = card.dataset.name;
+            document.getElementById('reminder_time').value = card.dataset.reminder;
+            document.getElementById('habit_icon').value = card.dataset.icon;
+
+            // Scroll to form
+            document.querySelector('#habitForm').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        });
+    });
+
+    // Form validation
+    const form = document.getElementById('habitForm');
+    const durationInput = document.getElementById('duration_days');
+
+    form.addEventListener('submit', function(e) {
+        const duration = parseInt(durationInput.value);
+        if (duration > 21) {
+            e.preventDefault();
+            alert('Duration cannot exceed 21 days');
+            durationInput.value = 21;
+        }
+    });
+});
+</script>
 {% endblock %}

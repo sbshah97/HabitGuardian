@@ -71,16 +71,27 @@ def create_habit():
     if request.method == 'POST':
         name = request.form.get('name')
         stake_amount = float(request.form.get('stake_amount'))
+        duration_days = min(int(request.form.get('duration_days', 21)), 21)
+        reminder_time = datetime.strptime(request.form.get('reminder_time'), '%H:%M').time()
+        habit_icon = request.form.get('habit_icon', 'bi-check-circle')
 
         habit = Habit(
             name=name,
             stake_amount=stake_amount,
-            user_id=current_user.id
+            user_id=current_user.id,
+            duration_days=duration_days,
+            reminder_time=reminder_time,
+            habit_icon=habit_icon
         )
         db.session.add(habit)
         db.session.commit()
+
+        flash(f'Habit "{name}" created successfully!')
         return redirect(url_for('dashboard'))
-    return render_template('create_habit.html')
+
+    # Get preset habits for the template
+    presets = Habit.get_preset_habits()
+    return render_template('create_habit.html', presets=presets)
 
 @app.route('/habit/<int:habit_id>/check_in', methods=['POST'])
 @login_required

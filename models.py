@@ -22,14 +22,55 @@ class Habit(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_check_in = db.Column(db.DateTime)
     donation_status = db.Column(db.String(20), default='pending')  # pending, donated, refunded
+    reminder_time = db.Column(db.Time, nullable=True)  # New field for reminder time
+    habit_icon = db.Column(db.String(100), nullable=False, default='bi-check-circle')  # Bootstrap icon class
+    duration_days = db.Column(db.Integer, nullable=False, default=21)  # Duration in days
 
     def __init__(self, **kwargs):
         if 'start_date' not in kwargs:
             kwargs['start_date'] = datetime.utcnow()
+        if 'duration_days' in kwargs:
+            # Ensure duration doesn't exceed 21 days
+            kwargs['duration_days'] = min(kwargs['duration_days'], 21)
         super(Habit, self).__init__(**kwargs)
         # Calculate end_date after start_date is set
         if not self.end_date:
-            self.end_date = kwargs['start_date'] + timedelta(days=21)
+            self.end_date = kwargs['start_date'] + timedelta(days=kwargs.get('duration_days', 21))
+
+    @staticmethod
+    def get_preset_habits():
+        return [
+            {
+                'name': 'Drink Water',
+                'icon': 'bi-droplet-fill',
+                'default_reminder': '09:00',
+                'description': 'Stay hydrated throughout the day'
+            },
+            {
+                'name': 'Breakfast',
+                'icon': 'bi-egg-fried',
+                'default_reminder': '08:00',
+                'description': 'Start your day with a healthy breakfast'
+            },
+            {
+                'name': 'Workout',
+                'icon': 'bi-bicycle',
+                'default_reminder': '17:00',
+                'description': 'Stay fit with daily exercise'
+            },
+            {
+                'name': 'Movie Night',
+                'icon': 'bi-film',
+                'default_reminder': '20:00',
+                'description': 'Relax and enjoy a movie'
+            },
+            {
+                'name': 'Journal',
+                'icon': 'bi-journal-text',
+                'default_reminder': '22:00',
+                'description': 'Reflect on your day'
+            }
+        ]
 
 class DailyLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
