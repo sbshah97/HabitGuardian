@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import app
 from extensions import db, login_manager
-from models import User, Habit, DailyLog
+from models import User, Habit, DailyLog, Achievement
 from services.plaid_service import PlaidService
 
 plaid_service = PlaidService()
@@ -104,6 +104,27 @@ def check_in(habit_id):
         db.session.add(log)
         habit.completion_streak += 1
         habit.last_check_in = datetime.utcnow()
+
+        # Check for achievements
+        streak_achievements = {
+            7: ("Week Warrior", "7-day streak"),
+            30: ("Monthly Master", "30-day streak"),
+            100: ("Century Champion", "100-day streak"),
+            365: ("Year Legend", "365-day streak")
+        }
+
+        for streak, (name, desc) in streak_achievements.items():
+            if habit.completion_streak == streak:
+                achievement = Achievement(
+                    user_id=current_user.id,
+                    habit_id=habit.id,
+                    name=name,
+                    description=desc,
+                    badge_type=f"streak_{streak}"
+                )
+                db.session.add(achievement)
+                flash(f'🎉 Achievement Unlocked: {name}!')
+
         db.session.commit()
         flash('Check-in recorded successfully!')
     else:
@@ -141,3 +162,35 @@ def set_access_token():
     db.session.commit()
 
     return jsonify({'status': 'success'})
+
+@app.route('/achievements')
+@login_required
+def achievements():
+    achievements = Achievement.query.filter_by(user_id=current_user.id).order_by(Achievement.achieved_at.desc()).all()
+    return render_template('achievements.html', achievements=achievements)
+
+@app.route('/share/linkedin/<int:achievement_id>')
+@login_required
+def share_to_linkedin(achievement_id):
+    achievement = Achievement.query.get_or_404(achievement_id)
+
+    if achievement.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('achievements'))
+
+    # Generate LinkedIn share URL with achievement details
+    title = f"I've achieved {achievement.name} on HabitBuilder!"
+    summary = f"I maintained a {achievement.description} with HabitBuilder's financial accountability system."
+    url = url_for('achievements', _external=True)
+
+    linkedin_url = (
+        "https://www.linkedin.com/sharing/share-offsite/?"
+        f"url={url}&"
+        f"title={title}&"
+        f"summary={summary}"
+    )
+
+    achievement.shared = True
+    db.session.commit()
+
+    return redirect(linkedin_url)
