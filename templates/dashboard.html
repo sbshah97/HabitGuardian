@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>My Habits</h1>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('create_habit') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Habit
+        </a>
+    </div>
+</div>
+
+{% if habits %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for habit in habits %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ habit.name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">Started: {{ habit.start_date.strftime('%Y-%m-%d') }}</small>
+                        </p>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Streak</span>
+                                <span class="badge bg-success">{{ habit.completion_streak }} days</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (habit.completion_streak / 7) * 100 }}%"
+                                     aria-valuenow="{{ habit.completion_streak }}" aria-valuemin="0" aria-valuemax="7">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="mb-2">
+                            <i class="bi bi-piggy-bank"></i> Stake: ${{ "%.2f"|format(habit.stake_amount) }}
+                        </p>
+                        {% if habit.is_active %}
+                            <form method="POST" action="{{ url_for('check_in', habit_id=habit.id) }}">
+                                <button type="submit" class="btn btn-success w-100" 
+                                        {% if habit.last_check_in and habit.last_check_in.date() == today %}disabled{% endif %}>
+                                    <i class="bi bi-check-circle"></i> 
+                                    {% if habit.last_check_in and habit.last_check_in.date() == today %}
+                                        Already Checked In
+                                    {% else %}
+                                        Check In
+                                    {% endif %}
+                                </button>
+                            </form>
+                        {% else %}
+                            <button class="btn btn-secondary w-100" disabled>Completed</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-calendar-plus display-1 text-muted"></i>
+        <p class="lead mt-3">No habits yet. Start by creating one!</p>
+        <a href="{{ url_for('create_habit') }}" class="btn btn-primary">Create Habit</a>
+    </div>
+{% endif %}
+
+{% endblock %}

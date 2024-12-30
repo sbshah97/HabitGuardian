@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 mb-4">Build Better Habits</h1>
+    <p class="lead mb-4">Put your money where your motivation is. Create habits with financial stakes and track your progress.</p>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card bg-dark mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">How it works</h5>
+                    <div class="row text-start g-4">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-1-circle-fill me-2 text-primary"></i>
+                                <div>
+                                    <h6>Create a Habit</h6>
+                                    <p class="text-muted">Choose a habit and set your stake amount</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-2-circle-fill me-2 text-primary"></i>
+                                <div>
+                                    <h6>Track Daily</h6>
+                                    <p class="text-muted">Check in daily to maintain your streak</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-3-circle-fill me-2 text-primary"></i>
+                                <div>
+                                    <h6>Win or Learn</h6>
+                                    <p class="text-muted">Succeed to keep your stake or donate it</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 gap-3">Get Started</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
