@@ -1,0 +1,253 @@
+I'll help you create a FastAPI application for a habit-building platform with financial incentives. Let's break this down into manageable steps.
+
+
+
+```python
+# Project Structure
+'''
+habit_tracker/
+├── alembic/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   └── habit.py
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   └── habit.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── plaid.py
+│   │   └── habit_tracker.py
+│   └── api/
+│       ├── __init__.py
+│       ├── deps.py
+│       └── endpoints/
+│           ├── __init__.py
+│           ├── auth.py
+│           └── habits.py
+├── requirements.txt
+└── .env
+'''
+
+# requirements.txt
+fastapi==0.104.1
+uvicorn==0.24.0
+sqlalchemy==2.0.23
+python-jose==3.3.0
+passlib==1.7.4
+python-multipart==0.0.6
+plaid-python==16.0.0
+python-dotenv==1.0.0
+alembic==1.12.1
+psycopg2-binary==2.9.9
+
+# app/config.py
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    DATABASE_URL: str
+    SECRET_KEY: str
+    PLAID_CLIENT_ID: str
+    PLAID_SECRET: str
+    PLAID_ENV: str = "sandbox"
+    CHARITY_ACCOUNT_ID: str
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+
+# app/models/user.py
+from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+    plaid_access_token = Column(String)
+    account_id = Column(String)
+
+# app/models/habit.py
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
+
+class Habit(Base):
+    __tablename__ = "habits"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String)
+    stake_amount = Column(Float)
+    start_date = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(Boolean, default=True)
+    completion_streak = Column(Integer, default=0)
+    
+    user = relationship("User", back_populates="habits")
+
+# app/services/plaid.py
+import plaid
+from plaid.api import plaid_api
+from plaid.model.payment_initiation_payment_create_request import PaymentInitiationPaymentCreateRequest
+from app.config import settings
+
+class PlaidService:
+    def __init__(self):
+        configuration = plaid.Configuration(
+            host=plaid.Environment.Sandbox,
+            api_key={
+                'clientId': settings.PLAID_CLIENT_ID,
+                'secret': settings.PLAID_SECRET,
+            }
+        )
+        self.client = plaid_api.PlaidApi(plaid.ApiClient(configuration))
+
+    async def create_payment(self, access_token: str, account_id: str, amount: float):
+        try:
+            request = PaymentInitiationPaymentCreateRequest(
+                access_token=access_token,
+                account_id=account_id,
+                amount=amount,
+                description="Habit failure penalty"
+            )
+            response = self.client.payment_initiation_payment_create(request)
+            return response.payment_id
+        except plaid.ApiException as e:
+            raise Exception(f"Failed to create payment: {str(e)}")
+
+# app/services/habit_tracker.py
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from app.models.habit import Habit
+from app.services.plaid import PlaidService
+
+class HabitTrackerService:
+    def __init__(self, db: Session, plaid_service: PlaidService):
+        self.db = db
+        self.plaid_service = plaid_service
+
+    async def check_habit_completion(self, habit_id: int):
+        habit = self.db.query(Habit).filter(Habit.id == habit_id).first()
+        if not habit:
+            raise ValueError("Habit not found")
+
+        # Check if week is complete
+        week_complete = (datetime.utcnow() - habit.start_date).days >= 7
+        
+        if week_complete:
+            if habit.completion_streak >= 7:
+                # Success! Return stake to user
+                return True
+            else:
+                # Failed - transfer money to charity
+                await self.plaid_service.create_payment(
+                    habit.user.plaid_access_token,
+                    habit.user.account_id,
+                    habit.stake_amount
+                )
+                habit.is_active = False
+                self.db.commit()
+                return False
+
+# app/api/endpoints/habits.py
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.services.habit_tracker import HabitTrackerService
+from app.schemas.habit import HabitCreate, HabitResponse
+from app.api.deps import get_db, get_current_user
+
+router = APIRouter()
+
+@router.post("/habits/", response_model=HabitResponse)
+async def create_habit(
+    habit: HabitCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    # Create new habit with stake
+    db_habit = Habit(
+        user_id=current_user.id,
+        name=habit.name,
+        stake_amount=habit.stake_amount
+    )
+    db.add(db_habit)
+    db.commit()
+    db.refresh(db_habit)
+    return db_habit
+
+@router.post("/habits/{habit_id}/check")
+async def check_habit(
+    habit_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+    habit_service: HabitTrackerService = Depends()
+):
+    habit = db.query(Habit).filter(
+        Habit.id == habit_id,
+        Habit.user_id == current_user.id
+    ).first()
+    
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    
+    habit.completion_streak += 1
+    db.commit()
+    
+    # Check if week is complete
+    result = await habit_service.check_habit_completion(habit_id)
+    return {"success": result}
+
+```
+
+Here's a step-by-step guide to implement this habit tracking application:
+
+1. Setup Project:
+   - Install required dependencies from requirements.txt
+   - Set up PostgreSQL database
+   - Configure environment variables in .env file
+
+2. Plaid Integration:
+   - Sign up for Plaid developer account
+   - Get API credentials (client_id and secret)
+   - Implement Plaid link flow for user bank account connection
+   - Test in sandbox environment first
+
+3. Database Setup:
+   - Run migrations using Alembic
+   - Create users and habits tables
+   - Set up relationships between models
+
+4. Implementation Steps:
+   a. User Flow:
+      - User signs up/logs in
+      - Connects bank account via Plaid
+      - Creates a habit with stake amount
+      - Checks in daily to mark habit completion
+   
+   b. Backend Logic:
+      - Track habit completion streak
+      - Check weekly completion status
+      - Handle money transfers based on success/failure
+
+5. Testing:
+   - Test with Plaid sandbox accounts
+   - Verify payment flows
+   - Test habit tracking logic
+   - Implement error handling
+
+6. Deployment:
+   - Set up production environment
+   - Configure secure environment variables
+   - Set up monitoring and logging
+
+Would you like me to elaborate on any of these steps or show how to implement a specific part in more detail?
