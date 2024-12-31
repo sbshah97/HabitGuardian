@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import app
 from extensions import db, login_manager
-from models import User, Habit, DailyLog, Achievement
+from models import User, Habit, DailyLog, Achievement, HabitCategory # Added HabitCategory import
 from services.plaid_service import PlaidService
 
 plaid_service = PlaidService()
@@ -219,28 +219,38 @@ def share_to_linkedin(achievement_id):
 
 @app.route('/leaderboard')
 def leaderboard():
-    # Get users with their total streak days and achievement counts
+    # Get categories for filter
+    categories = HabitCategory.query.all()
+
+    # Get users with their habits, streaks, and stakes
     leaderboard_data = db.session.query(
         User,
+        Habit,
+        HabitCategory,
         db.func.sum(Habit.completion_streak).label('total_streaks'),
-        db.func.count(Achievement.id).label('achievement_count')
+        db.func.sum(Habit.forfeited_stake).label('total_forfeited')
     ).join(Habit, User.id == Habit.user_id)\
-     .outerjoin(Achievement, User.id == Achievement.user_id)\
-     .group_by(User.id)\
-     .order_by(db.desc('total_streaks'), db.desc('achievement_count'))\
+     .join(HabitCategory, Habit.category_id == HabitCategory.id)\
+     .group_by(User.id, Habit.id, HabitCategory.id)\
+     .order_by(db.desc('total_streaks'))\
      .all()
 
     # Format data for template
     rankings = []
-    for idx, (user, total_streaks, achievement_count) in enumerate(leaderboard_data, 1):
+    for idx, (user, habit, category, total_streaks, total_forfeited) in enumerate(leaderboard_data, 1):
         rankings.append({
             'rank': idx,
             'email': user.email,
-            'total_streaks': total_streaks or 0,
-            'achievement_count': achievement_count or 0
+            'habit_name': habit.name,
+            'habit_icon': habit.habit_icon,
+            'category_id': category.id,
+            'category_name': category.name,
+            'streak_days': total_streaks or 0,
+            'stake_amount': habit.stake_amount,
+            'forfeited_stake': total_forfeited or 0
         })
 
-    return render_template('leaderboard.html', rankings=rankings)
+    return render_template('leaderboard.html', rankings=rankings, categories=categories)
 
 @app.route('/api-docs')
 def api_docs():

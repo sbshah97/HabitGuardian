@@ -5,9 +5,21 @@
 {% block content %}
 <div class="container py-4">
     <h1 class="text-center mb-4">🏆 Habit Champions</h1>
-    
+
+    <!-- Category Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <select class="form-select" id="categoryFilter">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-12">
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
@@ -16,13 +28,16 @@
                                 <tr>
                                     <th scope="col">Rank</th>
                                     <th scope="col">User</th>
-                                    <th scope="col">Total Streak Days</th>
-                                    <th scope="col">Achievements</th>
+                                    <th scope="col">Habit</th>
+                                    <th scope="col">Category</th>
+                                    <th scope="col">Streak</th>
+                                    <th scope="col">Stakes</th>
+                                    <th scope="col">Forfeited</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for rank in rankings %}
-                                    <tr class="leaderboard-row" data-rank="{{ rank.rank }}">
+                                    <tr class="leaderboard-row" data-rank="{{ rank.rank }}" data-category="{{ rank.category_id }}">
                                         <td>
                                             {% if rank.rank <= 3 %}
                                                 <span class="badge rounded-pill bg-{{ ['warning', 'secondary', 'bronze'][rank.rank-1] }} position-relative">
@@ -35,20 +50,22 @@
                                         </td>
                                         <td>{{ rank.email }}</td>
                                         <td>
+                                            <i class="{{ rank.habit_icon }}"></i>
+                                            {{ rank.habit_name }}
+                                        </td>
+                                        <td>{{ rank.category_name }}</td>
+                                        <td>
                                             <div class="progress" style="height: 20px;">
                                                 <div class="progress-bar bg-success streak-bar" 
                                                      role="progressbar" 
                                                      style="width: 0%;"
-                                                     data-streaks="{{ rank.total_streaks }}">
-                                                    {{ rank.total_streaks }}
+                                                     data-streaks="{{ rank.streak_days }}">
+                                                    {{ rank.streak_days }}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-info">
-                                                <i class="bi bi-award"></i> {{ rank.achievement_count }}
-                                            </span>
-                                        </td>
+                                        <td>${{ "%.2f"|format(rank.stake_amount) }}</td>
+                                        <td>${{ "%.2f"|format(rank.forfeited_stake) }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -64,13 +81,28 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Category filter functionality
+    const categoryFilter = document.getElementById('categoryFilter');
+    categoryFilter.addEventListener('change', function() {
+        const selectedCategory = this.value;
+        const rows = document.querySelectorAll('.leaderboard-row');
+
+        rows.forEach(row => {
+            if (!selectedCategory || row.dataset.category === selectedCategory) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
     // Animate progress bars
     const progressBars = document.querySelectorAll('.streak-bar');
     progressBars.forEach(bar => {
         const streaks = parseInt(bar.dataset.streaks);
         const maxStreaks = Math.max(...Array.from(progressBars).map(b => parseInt(b.dataset.streaks)));
         const percentage = (streaks / maxStreaks) * 100;
-        
+
         setTimeout(() => {
             bar.style.transition = 'width 1s ease-out';
             bar.style.width = percentage + '%';
