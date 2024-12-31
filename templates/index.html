@@ -4,59 +4,106 @@
 
 {% block content %}
 <div class="text-center py-5">
-    <h1 class="display-4 mb-4">Build Better Habits</h1>
-    <p class="lead mb-4">Put your money where your motivation is. Create habits with financial stakes that benefit charities when you need extra motivation.</p>
+    {% if current_user.is_authenticated %}
+        <div class="row">
+            <div class="col-md-8">
+                <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}</h1>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ url_for('create_habit') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Habit
+                </a>
+            </div>
+        </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card bg-dark mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">How it works</h5>
-                    <div class="row text-start g-4">
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-start">
-                                <i class="bi bi-1-circle-fill me-2 text-primary"></i>
-                                <div>
-                                    <h6>Create a Habit</h6>
-                                    <p class="text-muted">Choose a habit and set your stake amount</p>
+        {% if current_user.habits %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for habit in current_user.habits if habit.is_active %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="{{ habit.habit_icon }}"></i>
+                                    {{ habit.name }}
+                                </h5>
+                                <div class="progress mb-3" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ (habit.completion_streak / habit.duration_days) * 100 }}%">
+                                    </div>
                                 </div>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        {{ habit.completion_streak }}/{{ habit.duration_days }} days completed
+                                    </small>
+                                </p>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-start">
-                                <i class="bi bi-2-circle-fill me-2 text-primary"></i>
-                                <div>
-                                    <h6>Track Daily</h6>
-                                    <p class="text-muted">Check in daily to maintain your streak</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-plus display-1 text-muted"></i>
+                <p class="lead mt-3">Start your journey by creating your first habit!</p>
+                <a href="{{ url_for('create_habit') }}" class="btn btn-primary">Create Habit</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <h1 class="display-4 mb-4">Build Better Habits</h1>
+        <p class="lead mb-4">Put your money where your motivation is. Create habits with financial stakes that benefit charities when you need extra motivation.</p>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-dark mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">How it works</h5>
+                        <div class="row text-start g-4">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-1-circle-fill me-2 text-primary"></i>
+                                    <div>
+                                        <h6>Create a Habit</h6>
+                                        <p class="text-muted">Choose a habit and set your stake amount</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-start">
-                                <i class="bi bi-3-circle-fill me-2 text-primary"></i>
-                                <div>
-                                    <h6>Win or Support Charity</h6>
-                                    <p class="text-muted">Succeed to keep your stake or help a good cause</p>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-2-circle-fill me-2 text-primary"></i>
+                                    <div>
+                                        <h6>Track Daily</h6>
+                                        <p class="text-muted">Check in daily to maintain your streak</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-3-circle-fill me-2 text-primary"></i>
+                                    <div>
+                                        <h6>Win or Support Charity</h6>
+                                        <p class="text-muted">Succeed to keep your stake or help a good cause</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 gap-3">Get Started</a>
-                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
-            </div>
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 gap-3">Get Started</a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+                    <a href="{{ url_for('google_auth.google_login') }}" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="bi bi-google"></i> Login with Google
+                    </a>
+                </div>
 
-            {% if not current_user.is_authenticated %}
-            <div class="mt-4">
-                <a href="{{ url_for('api_docs') }}" class="text-muted text-decoration-none">
-                    <small><i class="bi bi-file-text"></i> API Documentation</small>
-                </a>
+                <div class="mt-4">
+                    <a href="{{ url_for('api_docs') }}" class="text-muted text-decoration-none">
+                        <small><i class="bi bi-file-text"></i> API Documentation</small>
+                    </a>
+                </div>
             </div>
-            {% endif %}
         </div>
-    </div>
+    {% endif %}
 </div>
 {% endblock %}

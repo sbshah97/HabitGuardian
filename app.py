@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Flask
 from extensions import db, login_manager
 from werkzeug.security import generate_password_hash
+from authlib.integrations.flask_client import OAuth
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -24,6 +25,13 @@ login_manager.login_view = 'login'
 # Import models and routes after db initialization
 from models import User, Habit
 from routes import *
+from blueprints.google_auth import google_auth, oauth
+
+# Initialize OAuth
+oauth.init_app(app)
+
+# Register blueprints
+app.register_blueprint(google_auth)
 
 with app.app_context():
     db.create_all()

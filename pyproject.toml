@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "authlib>=1.4.0",
     "email-validator>=2.2.0",
     "flask>=3.1.0",
     "flask-login>=0.6.3",
@@ -12,6 +13,8 @@ dependencies = [
     "oauthlib>=3.2.2",
     "plaid-python>=28.0.0",
     "psycopg2-binary>=2.9.10",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
     "sqlalchemy>=2.0.36",
     "trafilatura>=2.0.0",
     "twilio>=9.4.1",
