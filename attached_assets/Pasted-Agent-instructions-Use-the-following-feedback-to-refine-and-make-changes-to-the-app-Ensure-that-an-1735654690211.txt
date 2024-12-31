@@ -1,0 +1,30 @@
+Agent instructions: Use the following feedback to refine and make changes to the app. Ensure that any database migrations that need to be made for adding new features are done along with adding default values which make sense and also ensure that existing data is not left with null values. 
+
+In case you are not sure ask me for any values that need to be setup
+
+Major:
+Calendar (frequency) - number of times per day (either hourly or morning afternoon evening), how many days a week/on which days (similar to alarm setting in phone) 
+- If you make this addition, you will have to change the homepage text - the current focus is on daily habits
+
+Charity/Messaging/Stake - a good angle, but give the user the choice to select charity. But counterpoint - people may not care about charity and by forcing them to donate, you may lose users who feel their money is not going to the right place. Having a simple cost as an alternative could be a good idea. That way, prosocial people can select a charity, non-prosocial people select a straight up penalty which they will pay to you. So along with stake, they also decide recipient based on their preferences. 
+
+Stake - I put a stake of 10mil. I clearly do not have that lol. What is to prevent me from not paying? Think about preset options or having a certain ceiling on stake (could be 100 dollars to start off). 
+
+Achievements - would be a good idea to list the whole hierarchy of achievements - it gamifies the system a bit more and people will be more incentivized to use it.
+
+Leaderboard - nice idea, adds to the gamification notion and taps into competitiveness. Another future (fun) idea could be a leaderboard of donations 
+
+Minor: 
+Homepage pe even in spite of me being logged in, it gives Get Started/Login buttons. After login, homepage can be “Add New Habit” or something.
+
+Example can be - Read 5 pages/10 minutes, or a list of all the existing habits the user has subscribed to. 
+
+Achievements should have shaded for incoming acheivements
+
+User Details should have more meta data information
+
+Username
+First Name
+Last Name
+
+Leaderboard should show username for existing users and use email as username for now before `@gmail.com` for existing users

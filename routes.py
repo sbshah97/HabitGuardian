@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import app
 from extensions import db, login_manager
-from models import User, Habit, DailyLog, Achievement, HabitCategory
+from models import User, Habit, DailyLog, Achievement, HabitCategory, HabitFrequency, StakeRecipient
 from services.plaid_service import PlaidService
 
 plaid_service = PlaidService()
@@ -70,12 +70,14 @@ def dashboard():
 def create_habit():
     if request.method == 'POST':
         name = request.form.get('name')
-        stake_amount = float(request.form.get('stake_amount'))
+        stake_amount = min(float(request.form.get('stake_amount')), 100.0)
         duration_days = min(int(request.form.get('duration_days', 21)), 21)
         reminder_time = datetime.strptime(request.form.get('reminder_time'), '%H:%M').time()
         habit_icon = request.form.get('habit_icon', 'bi-check-circle')
         category_id = request.form.get('category_id')
+        stake_recipient_id = request.form.get('stake_recipient_id')
 
+        # Create the habit
         habit = Habit(
             name=name,
             stake_amount=stake_amount,
@@ -83,18 +85,39 @@ def create_habit():
             duration_days=duration_days,
             reminder_time=reminder_time,
             habit_icon=habit_icon,
-            category_id=category_id
+            category_id=category_id,
+            stake_recipient_id=stake_recipient_id
         )
         db.session.add(habit)
-        db.session.commit()
+        db.session.flush()  # Get the habit ID for frequencies
 
+        # Add frequencies
+        selected_days = request.form.getlist('days[]')
+        selected_times = request.form.getlist('times[]')
+
+        for day in selected_days:
+            for time in selected_times:
+                frequency = HabitFrequency(
+                    habit_id=habit.id,
+                    day_of_week=int(day),
+                    time_of_day=time,
+                    target_count=1
+                )
+                db.session.add(frequency)
+
+        db.session.commit()
         flash(f'Habit "{name}" created successfully!')
         return redirect(url_for('dashboard'))
 
-    # Get preset habits and categories for the template
+    # Get preset habits, categories, and stake recipients for the template
     presets = Habit.get_preset_habits()
     categories = HabitCategory.query.all()
-    return render_template('create_habit.html', presets=presets, categories=categories)
+    stake_recipients = StakeRecipient.query.filter_by(is_active=True).all()
+
+    return render_template('create_habit.html', 
+                         presets=presets,
+                         categories=categories,
+                         stake_recipients=stake_recipients)
 
 @app.route('/habit/<int:habit_id>/check_in', methods=['POST'])
 @login_required

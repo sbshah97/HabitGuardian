@@ -55,6 +55,47 @@
                             </select>
                         </div>
 
+                        <!-- Frequency Section -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Habit Frequency</h5>
+
+                                <!-- Days of Week -->
+                                <div class="mb-3">
+                                    <label class="form-label">Days of Week</label>
+                                    <div class="btn-group w-100" role="group">
+                                        {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                                        <input type="checkbox" class="btn-check" name="days[]" 
+                                               id="day{{ loop.index0 }}" value="{{ loop.index0 }}"
+                                               autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="day{{ loop.index0 }}">
+                                            {{ day }}
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Times of Day -->
+                                <div class="mb-3">
+                                    <label class="form-label">Times of Day</label>
+                                    <div class="row g-3">
+                                        {% for time in ['Morning', 'Afternoon', 'Evening'] %}
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="times[]" value="{{ time.lower() }}"
+                                                       id="time{{ loop.index }}">
+                                                <label class="form-check-label" for="time{{ loop.index }}">
+                                                    {{ time }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="duration_days" class="form-label">Duration (days)</label>
@@ -69,15 +110,29 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="stake_recipient" class="form-label">Stake Recipient</label>
+                            <select class="form-select" id="stake_recipient" name="stake_recipient_id" required>
+                                <option value="">Select recipient</option>
+                                {% for recipient in stake_recipients %}
+                                    <option value="{{ recipient.id }}" 
+                                            data-type="{{ recipient.recipient_type }}">
+                                        {{ recipient.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Choose where your stake goes if you miss your habit</div>
+                        </div>
+
                         <div class="mb-4">
                             <label for="stake_amount" class="form-label">Stake Amount ($)</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" id="stake_amount" 
-                                       name="stake_amount" min="1" step="0.01" required>
+                                       name="stake_amount" min="1" max="100" step="0.01" required>
                             </div>
                             <div class="form-text">
-                                This amount will be at stake for your habit duration
+                                Maximum stake amount is $100
                             </div>
                         </div>
 
@@ -126,14 +181,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form validation
     const form = document.getElementById('habitForm');
+    const stakeInput = document.getElementById('stake_amount');
     const durationInput = document.getElementById('duration_days');
+    const daysCheckboxes = document.querySelectorAll('input[name="days[]"]');
+    const timesCheckboxes = document.querySelectorAll('input[name="times[]"]');
 
     form.addEventListener('submit', function(e) {
         const duration = parseInt(durationInput.value);
+        const stake = parseFloat(stakeInput.value);
+        const selectedDays = Array.from(daysCheckboxes).filter(cb => cb.checked).length;
+        const selectedTimes = Array.from(timesCheckboxes).filter(cb => cb.checked).length;
+
         if (duration > 21) {
             e.preventDefault();
             alert('Duration cannot exceed 21 days');
             durationInput.value = 21;
+        }
+
+        if (stake > 100) {
+            e.preventDefault();
+            alert('Stake amount cannot exceed $100');
+            stakeInput.value = 100;
+        }
+
+        if (selectedDays === 0) {
+            e.preventDefault();
+            alert('Please select at least one day of the week');
+        }
+
+        if (selectedTimes === 0) {
+            e.preventDefault();
+            alert('Please select at least one time of day');
         }
     });
 });
