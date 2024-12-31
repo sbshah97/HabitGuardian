@@ -5,8 +5,8 @@
 {% block content %}
 <div class="text-center py-5">
     <h1 class="display-4 mb-4">Build Better Habits</h1>
-    <p class="lead mb-4">Put your money where your motivation is. Create habits with financial stakes and track your progress.</p>
-    
+    <p class="lead mb-4">Put your money where your motivation is. Create habits with financial stakes that benefit charities when you need extra motivation.</p>
+
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card bg-dark mb-4">
@@ -35,19 +35,27 @@
                             <div class="d-flex align-items-start">
                                 <i class="bi bi-3-circle-fill me-2 text-primary"></i>
                                 <div>
-                                    <h6>Win or Learn</h6>
-                                    <p class="text-muted">Succeed to keep your stake or donate it</p>
+                                    <h6>Win or Support Charity</h6>
+                                    <p class="text-muted">Succeed to keep your stake or help a good cause</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
                 <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 gap-3">Get Started</a>
                 <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
             </div>
+
+            {% if not current_user.is_authenticated %}
+            <div class="mt-4">
+                <a href="{{ url_for('api_docs') }}" class="text-muted text-decoration-none">
+                    <small><i class="bi bi-file-text"></i> API Documentation</small>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

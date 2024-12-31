@@ -9,27 +9,27 @@
     </div>
 </div>
 
-{% if achievements %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+    {% if achievements %}
         {% for achievement in achievements %}
             <div class="col">
                 <div class="card h-100">
                     <div class="card-body text-center">
                         {% if achievement.badge_type.startswith('streak') %}
-                            <div class="achievement-badge mb-3">
+                            <div class="achievement-badge mb-3 position-relative">
                                 <i class="bi bi-trophy-fill display-1 text-warning"></i>
                                 <span class="position-absolute top-50 start-50 translate-middle badge rounded-pill bg-primary">
                                     {{ achievement.badge_type.split('_')[1] }}
                                 </span>
                             </div>
                         {% endif %}
-                        
+
                         <h5 class="card-title">{{ achievement.name }}</h5>
                         <p class="card-text">{{ achievement.description }}</p>
                         <p class="text-muted">
                             <small>Achieved on {{ achievement.achieved_at.strftime('%Y-%m-%d') }}</small>
                         </p>
-                        
+
                         {% if not achievement.shared %}
                             <a href="{{ url_for('share_to_linkedin', achievement_id=achievement.id) }}" 
                                class="btn btn-primary" target="_blank">
@@ -44,12 +44,69 @@
                 </div>
             </div>
         {% endfor %}
+    {% endif %}
+</div>
+
+<!-- Next Available Achievements -->
+<div class="row mb-4">
+    <div class="col">
+        <h2>Next Achievements</h2>
     </div>
-{% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-trophy display-1 text-muted"></i>
-        <p class="lead mt-3">No achievements yet. Keep maintaining your habits to earn badges!</p>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
-    </div>
-{% endif %}
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for habit in current_user.habits if habit.is_active %}
+        {% set next_milestone = [] %}
+        {% if habit.completion_streak < 7 %}
+            {% set _ = next_milestone.append((7 - habit.completion_streak, "Week Warrior", "bi-trophy-fill text-bronze")) %}
+        {% elif habit.completion_streak < 14 %}
+            {% set _ = next_milestone.append((14 - habit.completion_streak, "Two Weeks Wonder", "bi-trophy-fill text-silver")) %}
+        {% elif habit.completion_streak < 21 %}
+            {% set _ = next_milestone.append((21 - habit.completion_streak, "21 Day Champion", "bi-trophy-fill text-gold")) %}
+        {% endif %}
+
+        {% if next_milestone %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="achievement-badge mb-3 position-relative">
+                            <i class="{{ next_milestone[0][2] }} display-1"></i>
+                            <div class="progress position-absolute bottom-0 start-0 w-100" style="height: 4px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (habit.completion_streak / next_milestone[0][0]) * 100 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        <h5 class="card-title">{{ next_milestone[0][1] }}</h5>
+                        <p class="card-text">
+                            {{ next_milestone[0][0] }} more days to achieve this badge for
+                            <strong>{{ habit.name }}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-trophy display-1 text-muted"></i>
+            <p class="lead mt-3">No active habits yet. Keep maintaining your habits to earn badges!</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.text-bronze { color: #CD7F32; }
+.text-silver { color: #C0C0C0; }
+.text-gold { color: #FFD700; }
+
+.achievement-badge {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    position: relative;
+}
+</style>
 {% endblock %}

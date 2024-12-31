@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import app
 from extensions import db, login_manager
-from models import User, Habit, DailyLog, Achievement, HabitCategory # Added HabitCategory import
+from models import User, Habit, DailyLog, Achievement, HabitCategory
 from services.plaid_service import PlaidService
 
 plaid_service = PlaidService()
@@ -74,6 +74,7 @@ def create_habit():
         duration_days = min(int(request.form.get('duration_days', 21)), 21)
         reminder_time = datetime.strptime(request.form.get('reminder_time'), '%H:%M').time()
         habit_icon = request.form.get('habit_icon', 'bi-check-circle')
+        category_id = request.form.get('category_id')
 
         habit = Habit(
             name=name,
@@ -81,7 +82,8 @@ def create_habit():
             user_id=current_user.id,
             duration_days=duration_days,
             reminder_time=reminder_time,
-            habit_icon=habit_icon
+            habit_icon=habit_icon,
+            category_id=category_id
         )
         db.session.add(habit)
         db.session.commit()
@@ -89,9 +91,10 @@ def create_habit():
         flash(f'Habit "{name}" created successfully!')
         return redirect(url_for('dashboard'))
 
-    # Get preset habits for the template
+    # Get preset habits and categories for the template
     presets = Habit.get_preset_habits()
-    return render_template('create_habit.html', presets=presets)
+    categories = HabitCategory.query.all()
+    return render_template('create_habit.html', presets=presets, categories=categories)
 
 @app.route('/habit/<int:habit_id>/check_in', methods=['POST'])
 @login_required

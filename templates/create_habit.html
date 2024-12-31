@@ -16,7 +16,8 @@
                     <div class="card h-100 preset-habit" 
                          data-name="{{ preset.name }}"
                          data-reminder="{{ preset.default_reminder }}"
-                         data-icon="{{ preset.icon }}">
+                         data-icon="{{ preset.icon }}"
+                         data-category="{{ preset.category }}">
                         <div class="card-body text-center">
                             <i class="{{ preset.icon }} display-4 mb-3"></i>
                             <h5 class="card-title">{{ preset.name }}</h5>
@@ -42,6 +43,16 @@
                         <div class="mb-3">
                             <label for="name" class="form-label">Habit Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category_id" required>
+                                <option value="">Select a category</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <div class="row mb-3">
@@ -96,6 +107,14 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('name').value = card.dataset.name;
             document.getElementById('reminder_time').value = card.dataset.reminder;
             document.getElementById('habit_icon').value = card.dataset.icon;
+
+            // Set category if available
+            const categorySelect = document.getElementById('category');
+            const categoryOptions = Array.from(categorySelect.options);
+            const option = categoryOptions.find(opt => opt.text === card.dataset.category);
+            if (option) {
+                categorySelect.value = option.value;
+            }
 
             // Scroll to form
             document.querySelector('#habitForm').scrollIntoView({ 
